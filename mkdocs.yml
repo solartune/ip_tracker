@@ -1,0 +1,5 @@
+site_name: IP tracker
+pages:
+- Home: index.md
+- Changelog: changelog.md
+theme: readthedocs

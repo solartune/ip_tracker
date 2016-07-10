@@ -1,0 +1,10 @@
+*.pyc
+.idea/*
+*.sql
+*.rdb
+*.log
+*.orig
+.DS_Store
+Thumbs.db
+settings/local.py
+site/
