@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 from django.db import IntegrityError
 
-from rest_framework import viewsets, serializers, status
+from rest_framework import viewsets, serializers
 
 from .models import Tracker
 from .serializers import TrackerSerializer, TrackerCreateSerializer
@@ -12,7 +12,7 @@ from .serializers import TrackerSerializer, TrackerCreateSerializer
 class TrackerViewSet(viewsets.ModelViewSet):
     """
     View set for trackers.
-    Provides all base actions for objects.
+    Provides get, post and head actions for objects.
 
     """
 
