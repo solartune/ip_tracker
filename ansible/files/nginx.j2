@@ -1,0 +1,21 @@
+upstream {{ project_name }} {
+    server unix:///home/{{ user }}/{{ project_name }}/{{ project_name }}.sock;
+}
+server {
+    listen       80;
+    server_name  {{ server_name }};
+    charset     utf-8;
+    client_max_body_size 75M;
+    error_log /home/{{ user }}/{{ project_name }}/log/errors.log;
+    location / {
+        uwsgi_pass  {{ project_name }};
+        include     /etc/nginx/uwsgi_params;
+    }
+    location /static {
+        alias {{ static_root }};
+    }
+
+    location /media {
+        alias {{ media_root }};
+    }
+}

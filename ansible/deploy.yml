@@ -1,0 +1,66 @@
+---
+- hosts: servers
+  vars_files:
+    - vars.yml
+  gather_facts: false
+  become: yes
+
+  tasks:
+    - name: Clone/pull project repo
+      git: repo={{ project_repo }} dest={{ install_root }}/{{ project_name }} accept_hostkey=yes
+      notify:
+
+    - name: install python packages
+      pip: requirements={{ install_root }}/{{ project_name }}/requirements.txt
+      notify:
+
+    - name: copy nginx config
+      template: src=files/nginx.j2 dest=/etc/nginx/sites-enabled/{{ project_name }}.conf
+      notify:
+
+    - name: create a symlink of nginx in sites-enabled
+      file: "src=/etc/nginx/sites-available/{{ project_name }}.conf dest=/etc/nginx/sites-enabled/{{ project_name }}.conf state=link"
+
+    - name: touch the symlink file
+      command: "touch /etc/nginx/sites-available/{{ project_name }}.conf"
+      - restart nginx
+
+    - name: django migrate
+      django_manage: command=migrate app_path={{ install_root }}/{{ project_name }} pythonpath={{ pythonpath }}
+
+    - name: django collectstatic
+      django_manage: command=collectstatic app_path={{ install_root }}/{{ project_name }} pythonpath={{ pythonpath }}
+
+    - name: make sure nginx server is running
+      service: name=nginx state=started enabled=yes
+
+    - name: install uwsgi
+      pip: name=uwsgi
+
+    - name: Install supervisor
+      apt: name=supervisor state=present force=yes
+      when: is_installed.rc != 0
+
+    - name: Create UWSGI vassals directory
+      file: "path={{ vassals_dir }}  state=directory"
+
+    - name: setup uwsgi in supervisor
+      template: "src=uwsgi-server.j2 dest={{ supervisor_conf_dir }}/uwsgi-runner.conf"
+
+    - name: setup project uwsgi configuration file
+      template: "src=uwsgi.j2 dest=/home/{{ project_name }}/{{ project_name }}_uwsgi.ini"
+
+    - name: create a symlink of uwsgi in vassals
+      file: "src=/home/{{ user }}/{{ project_name }}/{{ project_name }}_uwsgi.ini dest=/etc/uwsgi/vassals/{{ project_name }}_uwsgi.ini state=link"
+
+    - name: touch the symlink file
+      command: "touch /etc/uwsgi/vassals/{{ project_name }}_uwsgi.ini"
+      - update supervisor
+
+
+  handlers:
+    - name: restart nginx
+      service: name=nginx state=restarted
+
+    - name: update supervisor
+      supervisorctl: name=uwsgi-runner state=restarted
